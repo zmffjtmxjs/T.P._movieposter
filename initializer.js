@@ -4,7 +4,7 @@ get_body.innerHTML = `
     <header>
         pagetitle
     </header>
-    <div id="menu">
+    <div id="myMenu">
         <div class="h-container">
             <div class="item">menu 1</div>
             <div class="item">menu 2</div>
@@ -12,7 +12,7 @@ get_body.innerHTML = `
             <div class="item last">login</div>
         </div>
     </div>
-    <nav>
+    <nav id="myNav">
         navigation
         <ul>장르
             <a href=""><li>장르1</li></a>
@@ -23,8 +23,8 @@ get_body.innerHTML = `
             <a href=""><li>(2010~2020)</li></a>
         </ul>
     </nav>
-    <section>
+    <section id="mySection">
         list <br><br>
-        게시글 리스트 
+        게시글 리스트
     </section>
     `;
