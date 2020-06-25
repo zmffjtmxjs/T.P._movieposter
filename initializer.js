@@ -2,7 +2,7 @@ var get_body = document.getElementById("main")
 get_body.innerHTML = null;
 get_body.innerHTML = `
     <header>
-    <h2>HEADER 영역</h2>
+        pagetitle
     </header>
     <div id="menu">
         <div class="h-container">
@@ -27,7 +27,4 @@ get_body.innerHTML = `
         list <br><br>
         게시글 리스트 
     </section>
-    <footer>
-        <h2>FOOTER 영역</h2>
-    </footer>
     `;
