@@ -1,5 +1,19 @@
 //Section(주내용) 부분의 동적화 담당
 
+//로그인 상태에 따른 메뉴 비/활성화 상태 표시(글자색 바꿈)
+function menu_able_display(is_login) {
+    if(is_login == true) {
+        $(function(){
+            $(".item.middle").css("color", "#ffffff");
+        });
+    } else {
+        $(function(){
+            $(".item.middle").css("color", "#aaaaaa");
+        });
+    }
+}
+
+//게시물 리스트 표시
 function list_displayer() {
     document.getElementById("mySection").innerHTML = `
     <table border = 1>
@@ -28,4 +42,8 @@ function list_displayer() {
             <td>` + post[i][3] + `</td>
         </tr>`;
     }
+}
+
+function post_displayer() {
+
 }

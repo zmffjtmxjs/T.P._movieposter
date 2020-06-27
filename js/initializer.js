@@ -13,4 +13,5 @@ user_info.push(["master", "master", "개발자", "master@gmail.com", 0]);
 post.push(["제목", "영화제목", "닉네임", "날짜", "포스트내용"]);
 
 //로드 후 초기 페이지
-list_displayer();
+list_displayer();                 //게시물 리스트 표시
+menu_able_display(is_login);      //로그인 상태에 따른 메뉴 비/활성화 상태 표시(글자색 바꿈)
