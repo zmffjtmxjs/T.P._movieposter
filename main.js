@@ -25,21 +25,46 @@ database.connect();
 app.use(express.static('html'));
 
 
-app.get('/', function(request, response) {                          //라우팅(긴버전)
+app.get('/', function(request, response) {                          //라우팅
   fs.readdir(`./data`, function(error, FileList) {
-    //sql 문 post 테이블의 모든 데이터를 가져오고 post_id로 정렬
+    //                      post 테이블의 제목, 작성일, 수정일, user_id를 대입하여 users 테이블의 닉네임, movie_id를 대입하여 movies 테이블의 영화이름 을 가져온다.
     var sql = `SELECT a.title AS post, c.name AS movie, b.nickname AS author, a.createdate, a.modifydate FROM posts AS a JOIN users AS b ON b.user_id = a.user_id JOIN movies AS c ON c.movie_id = a.movie_id;`;
     database.query(sql, function(error, rows) {
-      var list = rows[0];
-      console.log(rows[0].post);
-      console.log(rows[0].movie);
-      console.log(rows[0].author);
-      console.log(rows[0].createdate);
-      if(rows[0].modifydate == "null") {
-        console.log(rows[0].modifydate);
+
+      var table = ""
+      for(var count in rows) {
+        var numbering = Number(count) + 1;
+        var createdate = new date(rows[count].createdate);
+        var modifydate = new date(rows[count].createdate);
+
+        table += `<td>` + numbering + `</td>`
+        if (rows[count].post == null) {
+          table += `<td><a href="/page">"` + rows[count].movie + `"에 대한 리뷰</a></td>`
+        } else {
+          table += `<td><a href="/page">` + rows[count].post + `(` + rows[count].movie + `)</a></td>`
+        }
+        table += `<td>` + rows[count].author + `</td>`
+        if (rows[count].modifydate == null) {
+          table += `<td>` + rows[count].createdate + `</td>`
+        } else {
+          table += `<td>` + rows[count].createdate + `(` + rows[count].modifydate + `)</td>`
+        }
       }
+      
       var html = template.HTML("영화 리뷰 사이트", "", `
-        
+          <table border = 1>
+          <thead>
+            <tr>
+              <th>번호</th>
+              <th>제목(영화이름)</th>
+              <th>게시자</th>
+              <th>게시일</th>
+            </tr>
+          </thead>
+            <tbody id="post_list">
+            ` + table + `
+            </tbody>
+          </table>
       `, "");
       response.send(html);
     });
