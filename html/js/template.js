@@ -1,5 +1,13 @@
 module.exports = {
-  HTML:function(title, list, body, control){
+  HTML:function(title, sectiontitle, createdate, modifydate, body) {
+    if(!createdate) {
+
+    }
+    else if(modifydate == null){
+      var create_modify_date = `<h5>게시일 : ${createdate}</h5>`;
+    } else {
+      var create_modify_date = `<h5>게시일 : ${createdate} (수정됨 : ${modifydate})</h5>`;
+    }
     return `
     <!DOCTYPE html>
 <html>
@@ -8,13 +16,11 @@ module.exports = {
         <title>${title}</title>
         <style>
             body {background-color: azure;}
+            #warapper {display: table; width: 100%;}
         </style>
         <script src="js/jquery-3.5.1.min.js"></script>
-        <link rel="stylesheet" href="css/title_header.css">
-        <link rel="stylesheet" href="css/menu_bar.css">
-        <link rel="stylesheet" href="css/nav.css">
-        <link rel="stylesheet" href="css/display_main.css">
-
+        <link rel="stylesheet" href="css/commen.css">
+        <link rel="stylesheet" href="css/post_read.css">
     </head>
     <body id="main">
         <header>
@@ -28,27 +34,24 @@ module.exports = {
                 <div class="item last">login</div>
             </div>
         </div>
-        <nav id="myNav">
-            navigation
-            <ul>장르
-                <a href=""><li>장르1</li></a>
-                <a href=""><li>장르2</li></a>
-            </ul>
-            <ul>연도
-                <a href=""><li>(2000~2010)</li></a>
-                <a href=""><li>(2010~2020)</li></a>
-            </ul>
+        <nav id="wrapper">
+          <nav id="myNav">
+              navigation
+              <ul>장르
+                  <a href=""><li>장르1</li></a>
+                  <a href=""><li>장르2</li></a>
+              </ul>
+              <ul>연도
+                  <a href=""><li>(2000~2010)</li></a>
+                  <a href=""><li>(2010~2020)</li></a>
+              </ul>
+          </nav>
+          <section id="mySection">
+            <h3>${sectiontitle}</h3>
+            ${create_modify_date}
+            ${body}
+          </section>
         </nav>
-        <section id="mySection">
-          ${list}
-          ${control}
-          ${body}
-        </section>
-        
-        <script src="js/displayer.js"></script>
-        <script src="js/initializer.js"></script>
-        <script src=""></script>
-        <script src=""></script>
     </body>
 </html>
     `;
