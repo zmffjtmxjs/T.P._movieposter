@@ -125,32 +125,39 @@ app.get('/', function(request, response) {                          //라우팅
                   FROM posts AS a
                   JOIN users AS b ON b.user_id = a.user_id
                   JOIN movies AS c ON c.movie_id = a.movie_id
-                  WHERE post_id = ${filteredId}`;
+                  WHERE post_id = ${filteredId};`;
       database.query(sql, function(error, rows) {
         var post_data = rows[0];
-        var sql = `SELECT * FROM comment WHERE post_id = ${post_data.post_id}`
+        post_data.post_id = filteredId;
+        var sql = `SELECT b.nickname, a.description, a.score, date_format(a.createdate, "%Y-%m-%d") AS createdate
+                    FROM comments AS a
+                    JOIN users AS b
+                    ON a.user_id = b.user_id
+                    WHERE a.post_id = ${post_data.post_id};`
         database.query(sql, function(error, rows){
+          var comment = new Array();
+          for(var count in rows) {
+            comment[count] = rows[count];
+          }
 
-          var html = template.Post_Reader_HTML("영화 리뷰 사이트", post_data.title, post_data.createdate, post_data.modifydate, post_data.description, `
-            <form action="/" method="get">
-              <input type="submit" value="돌아가기" href="/">
-            </form>
-          `,`
-            <form action="/update" method="post">
-              <input type="hidden" name="id" value="${filteredId}">
-              <input type="submit" value="변경">
-            </form>
-          `,`
-            <form action="/delete_process" method="post" onsubmit="return recheck()">
-              <input type="hidden" name="id" value="${filteredId}">
-              <input type="submit" value="삭제">
-            </form>
-          `);
+          var comment_table = ""
+          for(var count in comment) {
+            comment_table += `
+              <tr>
+                <td>${comment[count].nickname}</td>
+                <td>${comment[count].description}</td>
+                <td>${comment[count].score}</td>
+                <td>${comment[count].createdate}</td>
+              </tr>
+            `
+          }            
+
+          var html = template.Post_Reader_HTML("영화 리뷰 사이트", post_data, comment_table);
           response.send(html);
         });
       });
     });
-});
+  });
 }
 
 {//포스트 등록 화면 (Create)
