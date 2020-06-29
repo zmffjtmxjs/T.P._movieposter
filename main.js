@@ -75,8 +75,7 @@ app.get('/', function(request, response) {                          //라우팅
                       <div class="item middle"><a href="/create">리뷰 등록</a></div>
                       <div class="item middle">
                         <form action="/movie_registration" method="post">
-                          <input type="hidden" name="id" value="${filteredId}">
-                          <input type="submit" value="변경">
+                          <input type="submit" value="영화 등록">
                         </form>
                       </div>
                       <div class="item middle">menu 3</div>
@@ -128,7 +127,7 @@ app.get('/', function(request, response) {                          //라우팅
                   JOIN movies AS c ON c.movie_id = a.movie_id
                   WHERE post_id = ${filteredId}`;
       database.query(sql, function(error, rows) {
-        var html = template.HTML("영화 리뷰 사이트", rows[0].title, rows[0].createdate, rows[0].modifydate, rows[0].description, `
+        var html = template.Post_Reader_HTML("영화 리뷰 사이트", rows[0].title, rows[0].createdate, rows[0].modifydate, rows[0].description, `
           <form action="/" method="get">
             <input type="submit" value="돌아가기" href="/">
           </form>
@@ -163,25 +162,8 @@ app.get(`/create`, function(request, response) {
     }
     movies += `</selcet>`
 
-    var html = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>게시물 작성</title>
-      </head>
-      <body>
-        <form name="post_editer" action="/create_process" method="post" onsubmit="return data_integrity()">
-            <p><input type="text" name="edit_title" placeholder = "제목(생략가능)"></input></p>
-            영화 제목 : ${movies}<input type="hidden" name="user_nickname" value="관리자">
-            <p><textarea name="edit_description" placeholder = "내용"></textarea><p>
-            <p><input type="submit">
-        </form>
-        <script src="js/html_functions.js"></script>
-      </body>
-    </html>
-    `;
-    
+    var html = template.Editer_HTML(movies);
+
     response.send(html);
   });
 });
@@ -256,25 +238,7 @@ app.post(`/update`, function(request, response) {
           }
           movies += `</selcet>`
       
-          var html = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <title>게시물 작성</title>
-            </head>
-            <body>
-              <form name="post_editer" action="/update_process" method="post" onsubmit="return data_integrity()">
-                <input type="hidden" name="post_id" value="${post_id}">
-                <p><input type="text" name="edit_title" placeholder = "제목(생략가능)" value="${title}"></input></p>
-                영화 제목 : ${movies}<input type="hidden" name="user_nickname" value="${nickname}">
-                <p><textarea name="edit_description" placeholder = "내용">${description}</textarea><p>
-                <p><input type="submit">
-              </form>
-              <script src="js/html_functions.js"></script>
-            </body>
-          </html>
-          `;
+          var html = template.Editer_HTML(movies, post_id, title, nickname, description);
           
           response.send(html);
         });
