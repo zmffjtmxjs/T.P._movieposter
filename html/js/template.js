@@ -48,7 +48,7 @@ module.exports = {
     `;
   },
 
-  Editer_HTML:function(movies, post_id, title, nickname, description) {
+  Editer_HTML:function(movies, post_data) {
     if(arguments.length == 1) {
       var back = ``
       var form = `
@@ -60,13 +60,13 @@ module.exports = {
       </form>
       `;
     } else {
-      var back = `post_id=${post_id}`
+      var back = `post_id=${post_data.post_id}`
       var form = `
         <form name="post_editer" action="/update_process" method="post" onsubmit="return data_integrity()">
-          <input type="hidden" name="post_id" value="${post_id}">
-          <p><input type="text" name="edit_title" placeholder = "제목(생략가능)" value="${title}"></input></p>
-          영화 제목 : ${movies}<input type="hidden" name="user_nickname" value="${nickname}">
-          <p><textarea name="edit_description" placeholder = "내용">${description}</textarea><p>
+          <input type="hidden" name="post_id" value="${post_data.post_id}">
+          <p><input type="text" name="edit_title" placeholder = "제목(생략가능)" value="${post_data.title}"></input></p>
+          영화 제목 : ${movies}<input type="hidden" name="user_nickname" value="${post_data.nickname}">
+          <p><textarea name="edit_description" placeholder = "내용">${post_data.description}</textarea><p>
           <p><input type="submit">
         </form>
       `;
