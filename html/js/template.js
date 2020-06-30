@@ -58,7 +58,7 @@ module.exports = {
                   <form name="comment_creater" action="/comment_create_process" method="post" onsubmit="return comment_data_intergrity(creater)">
                     <input type="hidden" name="post_id" value="${post_data.post_id}">
                     <input type="hidden" name="user_id" value="1">
-                    <input type="hidden" name="score" value="2.5">
+                    <input type="hidden" name="score" value="5">
                     <input type="text" name="description" placeholder="댓글 입력">
                     <table>
                       <tr>
