@@ -11,7 +11,6 @@ const url = require('url');
 const path = require('path');
 const http = require('http');
 const qs = require('querystring');
-const { GetFormatDate } = require('./html/js/template.js');
 
 var port = hostinfo.port;
 var database = mysql.createConnection({
@@ -25,7 +24,7 @@ database.connect();
 
 app.use(express.static('html'));
 
-
+{//메인페이지
 app.get('/', function(request, response) {                          //라우팅
   fs.readdir(`./data`, function(error, FileList) {
     //                      post 테이블의 제목, 작성일, 수정일, user_id를 대입하여 users 테이블의 닉네임, movie_id를 대입하여 movies 테이블의 영화이름 을 가져온다.
@@ -39,7 +38,7 @@ app.get('/', function(request, response) {                          //라우팅
       for(var count in rows) {
         var numbering = new Number(count);
         table += `<tr><td>` + (numbering+1) + `</td>`
-        if (rows[count].post == null) {
+        if (rows[count].post == " ") {
           table += `<td><a href="/post_id=` + rows[count].post_id + `">"` + rows[count].movie + `"에 대한 리뷰</a></td>`
         } else {
           table += `<td><a href="/post_id=` + rows[count].post_id + `">` + rows[count].post + `[` + rows[count].movie + `]</a></td>`
@@ -72,8 +71,12 @@ app.get('/', function(request, response) {                          //라우팅
               </header>
               <div id="myMenu">
                   <div class="h-container">
-                      <div class="item middle"><a href="/create">리뷰 등록</a></div>
-                      <div class="item middle">menu 2</div>
+                      <div class="item middle"><a href="/post_create">리뷰 등록</a></div>
+                      <div class="item middle">
+                        <form action="/movie_registration" method="post">
+                          <input type="submit" value="영화 등록">
+                        </form>
+                      </div>
                       <div class="item middle">menu 3</div>
                       <div class="item last">login</div>
                   </div>
@@ -111,37 +114,184 @@ app.get('/', function(request, response) {                          //라우팅
     });
   });
 });
+}
 
+{//포스트 열람 (Read)
 app.get(`/post_id=` + `:postId`, function(request, response) {
-    fs.readdir(`./data`, function(error, filelist) {
-      var filteredId = path.parse(request.params.postId).base;
-      var sql = `SELECT a.title, c.name, a.description, b.nickname, date_format(a.createdate, "%Y-%m-%d") AS createdate, date_format(a.modifydate, "%Y-%m-%d") AS modifydate
-                  FROM posts AS a
-                  JOIN users AS b ON b.user_id = a.user_id
-                  JOIN movies AS c ON c.movie_id = a.movie_id
-                  WHERE post_id = ${filteredId}`;
-      database.query(sql, function(error, rows) {
-        var html = template.HTML("영화 리뷰 사이트", rows[0].title, rows[0].createdate, rows[0].modifydate, rows[0].description, `
-          <form action="/" method="get">
-            <input type="submit" value="돌아가기" href="/">
-          </form>
-        `,`
-          <form action="/update" method="post">
-            <input type="hidden" name="id" value="${filteredId}">
-            <input type="button" value="변경">
-          </form>
-        `,`
-          <form action="/delete_process" method="post" onsubmit="return recheck()">
-            <input type="hidden" name="id" value="${filteredId}">
-            <input type="submit" value="삭제">
-          </form>
-        `);
+  fs.readdir(`./data`, function(error, filelist) {
+    var filteredId = path.parse(request.params.postId).base;
+    var sql = `SELECT a.title, c.name, a.description, b.nickname, date_format(a.createdate, "%Y-%m-%d") AS createdate, date_format(a.modifydate, "%Y-%m-%d") AS modifydate
+                FROM posts AS a
+                JOIN users AS b ON b.user_id = a.user_id
+                JOIN movies AS c ON c.movie_id = a.movie_id
+                WHERE post_id = ${filteredId};`;
+    database.query(sql, function(error, rows) {
+      var post_data = rows[0];
+      post_data.post_id = filteredId;
+      var sql = `SELECT b.nickname, a.description, a.score, date_format(a.createdate, "%Y-%m-%d") AS createdate
+                  FROM comments AS a
+                  JOIN users AS b
+                  ON a.user_id = b.user_id
+                  WHERE a.post_id = ${post_data.post_id};`
+      database.query(sql, function(error, rows){
+        var comment = new Array();
+        for(var count in rows) {
+          comment[count] = rows[count];
+        }
+
+        var comment_table = ""
+        for(var count in comment) {
+          comment_table += `
+            <tr>
+              <td>${comment[count].nickname}</td>
+              <td>${comment[count].description}</td>
+              <td>${comment[count].score}</td>
+              <td>${comment[count].createdate}</td>
+            </tr>
+          `
+        }            
+
+        var html = template.Post_Reader_HTML("영화 리뷰 사이트", post_data, comment_table);
         response.send(html);
       });
     });
+  });
 });
+}
 
-app.post(`/delete_process`, function(request, response) {
+{//포스트 등록 화면 (Create)
+app.get(`/post_create`, function(request, response) {
+  var sql = `SELECT name FROM movies`
+  database.query(sql, function(error, rows) {
+    if(error) {
+      throw error;
+    }
+    
+    var movies = `<select name="movie_name">`;
+    for(var count in rows) {
+      movies += `<option value="${count}">${rows[count].name}</option>`;
+    }
+    movies += `</selcet>`
+
+    var html = template.Editer_HTML(movies);
+
+    response.send(html);
+  });
+});
+}
+
+{//포스트 등록 프로세서
+app.post(`/post_create_process`, function(request, response) {
+  var body = ""
+  request.on('data', function(data){
+    body = body + data;
+  });
+  request.on(`end`, function() {
+    var edit = qs.parse(body);
+    var title = edit.edit_title;
+    var movie = new Number(edit.movie_name);
+    var description = edit.edit_description;
+    var nickname = edit.user_nickname;
+    var user_id;
+
+    var movie_id =  movie + 1;    
+    var date = new Date();
+    var createdate = template.GetFormatDate(date);
+
+    sql = `SELECT user_id FROM users WHERE nickname = "${nickname}";`;
+    database.query(sql, function(error, rows) {
+      user_id = rows[0].user_id;
+
+      var sql = "INSERT INTO `moviereview`.`posts` (`title`, `description`, `createdate`, `user_id`, `movie_id`) VALUES ('" + title + "', '" + description + "', '" + createdate + "', '" + user_id + "', '" + movie_id + "');"
+
+      database.query(sql, function(error, result){
+        if(error) {
+          throw error;
+        }
+        response.writeHead(302, {Location: `/post_id=${result.insertId}`});
+        response.end();
+      })
+    });
+  });
+});
+}
+
+{//포스트 수정 화면 (Update)
+app.post(`/post_update`, function(request, response) {
+  var body = ""
+  request.on('data', function(data){
+    body = body + data;
+  });
+  request.on(`end`, function() {
+    var post = qs.parse(body);
+    var post_id = post.id;
+
+    sql = `SELECT * FROM posts WHERE post_id = ${post_id}`;    
+    database.query(sql, function(error, rows) {
+      var post_data = rows[0];
+      post_data.movie_id = new Number(post_data.movie_id);
+      post_data.movie_id -= 1;
+
+      sql = `SELECT nickname FROM users WHERE user_id = ${post_data.user_id}`
+      database.query(sql, function(error, rows) {
+        post_data.nickname = rows[0].nickname;
+
+        sql = `SELECT name FROM movies`
+        database.query(sql, function(error, rows) {
+          var movies = `<select name="movie_name" value="${post_data.movie_id}">`;
+          for(var count in rows) {
+            movies += `<option value="${count}">${rows[count].name}</option>`;
+          }
+          movies += `</selcet>`
+      
+          var html = template.Editer_HTML(movies, post_data);
+          
+          response.send(html);
+        });
+      });
+    });
+  });
+});
+}
+
+{//포스터 수정 프로세서
+app.post(`/post_update_process`, function(request, response) {
+  var body = ""
+  request.on('data', function(data){
+    body = body + data;
+  });
+  request.on(`end`, function() {
+    var edit = qs.parse(body);
+    var title = edit.edit_title;
+    var movie = new Number(edit.movie_name);
+    var description = edit.edit_description;
+    var nickname = edit.user_nickname;
+    var post_id = edit.post_id;
+
+    var movie_id =  movie + 1;    
+    var date = new Date();
+    var modifydate = template.GetFormatDate(date);
+
+    sql = `SELECT user_id FROM users WHERE nickname = "${nickname}";`;
+    database.query(sql, function(error, rows) {
+      var user_id = rows[0].user_id;
+
+      var sql = `UPDATE posts SET title='${title}', description='${description}', modifydate='${modifydate}', user_id='${user_id}', movie_id='${movie_id}' WHERE post_id = ${post_id};`
+
+      database.query(sql, function(error, result){
+        if(error) {
+          throw error;
+        }
+        response.writeHead(302, {Location: `/post_id=${post_id}`});
+        response.end();
+      })
+    });
+  });
+});
+}
+
+{//포스트 삭제 (Delete)
+app.post(`/post_delete_process`, function(request, response) {
   var body = ""
   request.on('data', function(data){
     body = body + data;
@@ -160,171 +310,31 @@ app.post(`/delete_process`, function(request, response) {
     });
   });    
 });
+}
 
-app.get(`/create`, function(request, response) {
-  var sql = `SELECT name FROM movies`
-  database.query(sql, function(error, rows) {
-    if(error) {
-      throw error;
-    }
-    
-    var movies = `<select name="movie_name">`;
-    for(var count in rows) {
-      movies += `<option value="${count}">${rows[count].name}</option>`;
-    }
-    movies += `</selcet>`
-
-    var html = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>게시물 작성</title>
-      </head>
-      <body>
-        <form name="post_editer" action="/create_process" method="post" onsubmit="return data_integrity()">
-            <p><input type="text" name="edit_title" placeholder = "제목(생략가능)"></input></p>
-            영화 제목 : ${movies}<input type="hidden" name="user_nickname" value="관리자">
-            <p><textarea name="edit_description" placeholder = "내용"></textarea><p>
-            <p><input type="submit">
-        </form>
-        <script src="js/html_functions.js"></script>
-      </body>
-    </html>
-    `;
-    
-    response.send(html);
-  });
-});
-
-app.post(`/create_process`, function(request, response) {
+{//댓글 추가
+app.post(`/comment_create_process`, function(request, response) {
   var body = ""
   request.on('data', function(data){
     body = body + data;
   });
   request.on(`end`, function() {
     var edit = qs.parse(body);
-    var title = edit.edit_title;
-    var movie = new Number(edit.movie_name);
-    var description = edit.edit_description;
-    var nickname = edit.user_nickname;
-    var user_id;
-
-    if(title == undefined || title == "undefined") {
-      title = "";
-    }
-    var movie_id =  movie + 1;    
     var date = new Date();
-    var createdate = GetFormatDate(date);
+    edit.createdate = template.GetFormatDate(date);
 
-    sql = `SELECT user_id FROM users WHERE nickname = "${nickname}";`;
-    database.query(sql, function(error, rows) {
-      user_id = rows[0].user_id;
-
-      var sql = "INSERT INTO `moviereview`.`posts` (`title`, `description`, `createdate`, `user_id`, `movie_id`) VALUES ('" + title + "', '" + description + "', '" + createdate + "', '" + user_id + "', '" + movie_id + "');"
-
-      database.query(sql, function(error, result){
-        if(error) {
-          throw error;
-        }
-        response.writeHead(302, {Location: `/post_id=${result.insertId}`});
-        response.end();
-      })
-    });
-  });
-});
-
-app.post(`/update`, function(request, response) {
-  var body = ""
-  request.on('data', function(data){
-    body = body + data;
-  });
-  request.on(`end`, function() {
-    var post = qs.parse(body);
-    var post_id = post.id;
-
-    sql = `SELECT * FROM posts WHERE post_id = ${post_id}`;    
-    database.query(sql, function(error, rows) {
-      var title = rows[0].title;
-      var description = rows[0].description;
-      var movie_id = new Number(rows[0].movie_id);
-      var user_id = rows[0].user_id;
-      movie_id -= 1;
-
-      sql = `SELECT nickname FROM users WHERE user_id = ${user_id}`
-      database.query(sql, function(error, rows) {
-        var nickname = rows[0].nickname;
-
-        sql = `SELECT name FROM movies`
-        database.query(sql, function(error, rows) {
-          var movies = `<select name="movie_name" value="${movie_id}">`;
-          for(var count in rows) {
-            movies += `<option value="${count}">${rows[count].name}</option>`;
-          }
-          movies += `</selcet>`
+    var sql = `INSERT INTO comments VALUES (NUll, '${edit.description}', '${edit.score}', '${edit.createdate}', '${edit.post_id}', '${edit.user_id}');`
+    database.query(sql, function(error, result){
+      if(error) {
+        throw error;
+      }
+      response.writeHead(302, {Location: `/post_id=${edit.post_id}`});
+      response.end();
       
-          var html = `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <title>게시물 작성</title>
-            </head>
-            <body>
-              <form name="post_editer" action="/update_process" method="post" onsubmit="return data_integrity()">
-                <input type="hidden" name="post_id" value="${post_id}">
-                <p><input type="text" name="edit_title" placeholder = "제목(생략가능)" value="${title}"></input></p>
-                영화 제목 : ${movies}<input type="hidden" name="user_nickname" value="${nickname}">
-                <p><textarea name="edit_description" placeholder = "내용">${description}</textarea><p>
-                <p><input type="submit">
-              </form>
-              <script src="js/html_functions.js"></script>
-            </body>
-          </html>
-          `;
-          
-          response.send(html);
-        });
-      });
     });
   });
 });
+}
 
-app.post(`/update_process`, function(request, response) {
-  var body = ""
-  request.on('data', function(data){
-    body = body + data;
-  });
-  request.on(`end`, function() {
-    var edit = qs.parse(body);
-    var title = edit.edit_title;
-    var movie = new Number(edit.movie_name);
-    var description = edit.edit_description;
-    var nickname = edit.user_nickname;
-    var post_id = edit.post_id;
-
-    if(title == undefined || title == "undefined") {
-      title = "";
-    }
-    var movie_id =  movie + 1;    
-    var date = new Date();
-    var modifydate = GetFormatDate(date);
-
-    sql = `SELECT user_id FROM users WHERE nickname = "${nickname}";`;
-    database.query(sql, function(error, rows) {
-      var user_id = rows[0].user_id;
-
-      var sql = `UPDATE posts SET title='${title}', description='${description}', modifydate='${modifydate}', user_id='${user_id}', movie_id='${movie_id}' WHERE post_id = ${post_id};`
-
-      database.query(sql, function(error, result){
-        if(error) {
-          throw error;
-        }
-        response.writeHead(302, {Location: `/post_id=${post_id}`});
-        response.end();
-      })
-    });
-  });
-});
 
 app.listen(port, () => console.log(`listening at http://localhost:${port}`));
