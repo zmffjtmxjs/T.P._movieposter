@@ -56,7 +56,7 @@ $('.starRev span').click(function(){
     $(this).parent().children('span').removeClass('on');
     $(this).addClass('on').prevAll('span').addClass('on');
     return false;
-  });
+});
 
 //댓글 수정을 위한 텍스트박스 제공
 function comment_edit(comment_id, post_id) {

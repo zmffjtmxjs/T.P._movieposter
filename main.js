@@ -50,67 +50,83 @@ app.get('/', function(request, response) {                          //라우팅
           table += `<td>` + rows[count].createdate + `(` + rows[count].modifydate + `)</td></tr>`
         }
       }
-      
-      var html = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-                <title>영화 리뷰 사이트</title>
-                <style>
-                  body {background-color: azure;}
-                  #warapper {display: table; width: 100%;}
-                </style>
-                <script src="js/jquery-3.5.1.min.js"></script>
-                <link rel="stylesheet" href="css/commen.css">
-                <link rel="stylesheet" href="css/post_list.css">
-          </head>
-          <body id="main">
-              <header>
-                 pagetitle
-              </header>
-              <div id="myMenu">
-                  <div class="h-container">
-                      <div class="item middle"><a href="/post_create">리뷰 등록</a></div>
-                      <div class="item middle">
-                        <form action="/movie_registration" method="post">
-                          <input type="submit" value="영화 등록">
-                        </form>
-                      </div>
-                      <div class="item middle">menu 3</div>
-                      <div class="item last">login</div>
-                  </div>
-              </div>
-              <nav id="myNav">
-                  navigation
-                  <ul>장르
-                      <a href=""><li>장르1</li></a>
-                      <a href=""><li>장르2</li></a>
-                  </ul>
-                  <ul>연도
-                      <a href=""><li>(2000~2010)</li></a>
-                      <a href=""><li>(2010~2020)</li></a>
-                  </ul>
-              </nav>
-              <section id="mySection">
-                <table border = 1 id="post_list">
-                  <thead>
-                    <tr>
-                      <th>번호</th>
-                      <th>제목[영화이름]</th>
-                      <th>게시자</th>
-                      <th>게시일</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ` + table + `
-                  </tbody>
-                </table>
-              </section>
-            </body>
-        </html>
-      `;
-      response.send(html);
+      var sql = `SELECT movie_id, name FROM movies`;
+      database.query(sql, function(error, rows) {
+        var movie_list = "";
+        for(var count in rows) {
+
+        }
+
+
+        var html = `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+                  <title>영화 리뷰 사이트</title>
+                  <style>
+                    body {background-color: azure;}
+                    #warapper {display: table; width: 100%;}
+                  </style>
+                  <script src="js/jquery-3.5.1.min.js"></script>
+                  <link rel="stylesheet" href="css/main.css">
+                  <link rel="stylesheet" href="css/post_list.css">
+            </head>
+            <body id="main">
+                <header>
+                  pagetitle
+                </header>
+                <div id="myMenu">
+                    <div class="h-container">
+                        <div class="item middle">
+                          <form action="/post_create" method="get">
+                            <input type="submit" value="리뷰 등록">
+                          </form>
+                        </div>
+                        <div class="item middle">
+                          <form action="movie_registration" method="get">
+                            <input type="submit" value="영화 등록">
+                          </form>
+                        </div>
+                        <div class="item middle">
+                          <form action="/contact_us.html" method="get">
+                            <input type="submit" value="문의하기">
+                          </form>
+                        </div>
+                        <div class="item last">login</div>
+                    </div>
+                </div>
+                <nav id="myNav">
+                    navigation
+                    <ul>장르
+                        <a href=""><li>장르1</li></a>
+                        <a href=""><li>장르2</li></a>
+                    </ul>
+                    <ul>연도
+                        <a href=""><li>(2000~2010)</li></a>
+                        <a href=""><li>(2010~2020)</li></a>
+                    </ul>
+                </nav>
+                <section id="mySection">
+                  <table border = 1 id="post_list">
+                    <thead>
+                      <tr>
+                        <th>번호</th>
+                        <th>제목[영화이름]</th>
+                        <th>게시자</th>
+                        <th>게시일</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ` + table + `
+                    </tbody>
+                  </table>
+                </section>
+              </body>
+          </html>
+        `;
+        response.send(html);
+      });
     });
   });
 });
@@ -203,24 +219,31 @@ app.post(`/post_create_process`, function(request, response) {
     var description = edit.edit_description;
     var nickname = edit.user_nickname;
     var user_id;
-
+    
     var movie_id =  movie + 1;    
     var date = new Date();
     var createdate = template.GetFormatDate(date);
 
-    sql = `SELECT user_id FROM users WHERE nickname = "${nickname}";`;
-    database.query(sql, function(error, rows) {
-      user_id = rows[0].user_id;
+    if(title == " ") {
+      sql = `SELECT name FROM movies WHERE movie_id = ${movie_id};`;
+      database.query(sql, function(error, rows) {
+        title = `"${rows[0].name}"에 대한 리뷰`
+      });
+    }
+      
+      sql = `SELECT user_id FROM users WHERE nickname = "${nickname}";`;
+      database.query(sql, function(error, rows) {
+        user_id = rows[0].user_id;
 
-      var sql = "INSERT INTO `moviereview`.`posts` (`title`, `description`, `createdate`, `user_id`, `movie_id`) VALUES ('" + title + "', '" + description + "', '" + createdate + "', '" + user_id + "', '" + movie_id + "');"
+        var sql = "INSERT INTO `moviereview`.`posts` (`title`, `description`, `createdate`, `user_id`, `movie_id`) VALUES ('" + title + "', '" + description + "', '" + createdate + "', '" + user_id + "', '" + movie_id + "');"
 
-      database.query(sql, function(error, result){
-        if(error) {
-          throw error;
-        }
-        response.writeHead(302, {Location: `/post_id=${result.insertId}`});
-        response.end();
-      })
+        database.query(sql, function(error, result){
+          if(error) {
+            throw error;
+          }
+          response.writeHead(302, {Location: `/post_id=${result.insertId}`});
+          response.end();
+      });
     });
   });
 });
@@ -309,13 +332,18 @@ app.post(`/post_delete_process`, function(request, response) {
   request.on(`end`, function() {
     var post = qs.parse(body);
     var filteredId = post.id;
-    database.query('DELETE FROM posts WHERE post_id = ?', [filteredId], function(error, result){
+    database.query('DELETE FROM comments WHERE post_id = ?', [filteredId], function(error, result){
       if(error) {
         throw error;
       }
-      fs.unlink(`post_id=${filteredId}`, function(error) {
-        response.writeHead(302, {Location: `/`});
-        response.end();
+      database.query('DELETE FROM posts WHERE post_id = ?', [filteredId], function(error, result){
+        if(error) {
+          throw error;
+        }
+        fs.unlink(`post_id=${filteredId}`, function(error) {
+          response.writeHead(302, {Location: `/`});
+          response.end();
+        });
       });
     });
   });    
@@ -382,5 +410,6 @@ app.post(`/comment_delete_process`, function(request, response) {
   });
 });
 }
+
 
 app.listen(port, () => console.log(`listening at http://localhost:${port}`));
